@@ -1,0 +1,345 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
+import { 
+  TrendingUp, 
+  DollarSign, 
+  Lightbulb, 
+  ShieldCheck, 
+  Menu, 
+  X, 
+  ChevronRight,
+  Github,
+  ArrowRight
+} from 'lucide-react';
+
+// --- 全域樣式模擬 (處理 Smooth Scroll 與 Tailwind 隱藏捲軸) ---
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+    
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      overflow-x: hidden;
+      background-color: #ffffff;
+      margin: 0;
+    }
+
+    /* 隱藏捲軸但保有滾動功能 */
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* 模擬 Lenis 平滑滾動基礎樣式 */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  `}</style>
+);
+
+// --- 子組件: Header (導航列) ---
+const Header = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navLinks = [
+    { name: '產品介紹', href: '#' },
+    { name: '手續費率', href: '#' },
+    { name: '存股專區', href: '#' },
+    { name: '投資學院', href: '#' },
+  ];
+
+  return (
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+      isScrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm py-3' : 'bg-transparent py-5'
+    }`}>
+      <div className="container mx-auto px-6 flex justify-between items-center">
+        <div className="flex items-center gap-2 cursor-pointer group">
+          <motion.div 
+            whileHover={{ rotate: 360 }}
+            transition={{ duration: 0.5 }}
+            className="w-10 h-10 bg-[#E62327] rounded-xl flex items-center justify-center shadow-lg"
+          >
+            <span className="text-white font-bold text-xl">P</span>
+          </motion.div>
+          <span className={`text-2xl font-bold tracking-tight transition-colors duration-300 ${isScrolled ? 'text-gray-900' : 'text-white'}`}>
+            口袋證券
+          </span>
+        </div>
+
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((item) => (
+            <a 
+              key={item.name} 
+              href={item.href} 
+              className={`font-medium transition-all hover:text-[#E62327] relative group ${
+                isScrolled ? 'text-gray-600' : 'text-white/90'
+              }`}
+            >
+              {item.name}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#E62327] transition-all group-hover:w-full" />
+            </a>
+          ))}
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-[#E62327] hover:bg-red-700 text-white px-6 py-2 rounded-full font-bold shadow-md transition-all"
+          >
+            立即登入
+          </motion.button>
+        </div>
+
+        {/* Mobile Toggle */}
+        <button className="md:hidden p-2" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          {isMobileMenuOpen ? 
+            <X className={isScrolled ? 'text-gray-900' : 'text-white'} /> : 
+            <Menu className={isScrolled ? 'text-gray-900' : 'text-white'} />
+          }
+        </button>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="absolute top-full left-0 w-full bg-white shadow-2xl overflow-hidden md:hidden"
+          >
+            <div className="flex flex-col p-6 gap-4">
+              {navLinks.map((item) => (
+                <a key={item.name} href={item.href} className="text-gray-800 font-medium text-lg border-b border-gray-50 pb-2">{item.name}</a>
+              ))}
+              <button className="bg-[#E62327] text-white py-4 rounded-2xl font-bold mt-2">
+                立即登入
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
+
+// --- 子組件: Hero (主視覺) ---
+const Hero = () => {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start start', 'end start'],
+  });
+
+  const yBackground = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
+  const opacityText = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  return (
+    <motion.section
+      ref={ref}
+      className="relative h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#E62327] via-[#f03e3e] to-[#ff6b6b] text-white px-6"
+    >
+      {/* 視差背景裝飾 */}
+      <motion.div className="absolute inset-0 z-0 opacity-20" style={{ y: yBackground }}>
+        <div className="absolute top-[10%] left-[5%] w-72 h-72 bg-white rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[10%] right-[5%] w-96 h-96 bg-red-400 rounded-full blur-[150px]" />
+      </motion.div>
+
+      <motion.div
+        className="relative z-10 text-center max-w-5xl"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        style={{ opacity: opacityText }}
+      >
+        <div className="inline-block mb-6 px-5 py-1.5 border border-white/20 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold tracking-[0.2em] uppercase">
+          全新數位理財時代
+        </div>
+        
+        <h1 className="text-5xl md:text-8xl font-bold mb-6 leading-tight">
+          <span className="block mb-2">口袋證券</span>
+          <span className="block text-2xl md:text-5xl font-normal opacity-90">您的數位金融好夥伴</span>
+        </h1>
+
+        <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto opacity-80 leading-relaxed font-light">
+          五分鐘極速開戶，輕鬆掌握市場脈動。我們不只提供工具，更陪您開啟財富成長的無限可能。
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-5 justify-center">
+          <motion.button
+            whileHover={{ scale: 1.05, y: -5 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-white text-[#E62327] font-bold py-4 px-12 rounded-full shadow-2xl flex items-center justify-center gap-3 group transition-all"
+          >
+            立即開戶體驗
+            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+            className="border-2 border-white/40 text-white font-bold py-4 px-12 rounded-full backdrop-blur-sm transition-all"
+          >
+            查看優惠活動
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* 裝飾線條 */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none rotate-180">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[60px] text-white fill-current">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C58.47,100.86,114.28,95.13,172,83.9,235.2,71.59,279,64.29,321.39,56.44Z" transform="rotate(180 600 60)"></path>
+        </svg>
+      </div>
+    </motion.section>
+  );
+};
+
+// --- 子組件: FeatureCard ---
+const FeatureCard = ({ icon: Icon, title, description, index }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.6 }}
+      viewport={{ once: true }}
+      className="flex-shrink-0 w-[300px] md:w-[340px] p-8 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-gray-50 snap-center
+                 hover:shadow-[0_30px_60px_rgba(230,35,39,0.08)] hover:-translate-y-2 transition-all duration-500 group"
+    >
+      <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-[#E62327] transition-colors duration-500">
+        <Icon className="text-[#E62327] group-hover:text-white transition-colors duration-500" size={32} />
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-4">{title}</h3>
+      <p className="text-gray-500 leading-relaxed">{description}</p>
+      
+      <div className="mt-10 flex items-center text-[#E62327] font-bold gap-2 cursor-pointer">
+        了解更多 <ArrowRight size={18} />
+      </div>
+    </motion.div>
+  );
+};
+
+// --- 子組件: Features (特色) ---
+const Features = () => {
+  const features = [
+    {
+      icon: TrendingUp,
+      title: '百元存股，輕鬆入門',
+      description: '小額也能投資大企業，穩健累積財富，無負擔開啟您的理財之路。',
+    },
+    {
+      icon: DollarSign,
+      title: '智慧選股，AI 推薦',
+      description: 'AI 智能分析市場數據，為您量身推薦潛力股，洞察先機不求人。',
+    },
+    {
+      icon: Lightbulb,
+      title: '獨家課程，免費學習',
+      description: '豐富的投資教學內容，從基礎到進階，助您快速成為股市達人。',
+    },
+    {
+      icon: ShieldCheck,
+      title: '資金安全，安心交易',
+      description: '嚴格遵守金融監管法規，保障您的每一筆交易，投資更安心。',
+    },
+  ];
+
+  return (
+    <section className="py-24 bg-white overflow-hidden">
+      <div className="container mx-auto px-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">我們的獨家優勢</h2>
+            <p className="text-gray-500 text-lg">口袋證券不僅是交易平台，更是您的投資導師。我們致力於讓投資變得更簡單、更直覺、更有趣。</p>
+          </div>
+          <div className="hidden md:flex gap-4">
+            <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#E62327] hover:border-[#E62327] cursor-pointer transition-all">
+              <ChevronRight className="rotate-180" />
+            </div>
+            <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#E62327] hover:border-[#E62327] cursor-pointer transition-all">
+              <ChevronRight />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-8 pb-10 scrollbar-hide px-2">
+          {features.map((item, index) => (
+            <FeatureCard key={index} {...item} index={index} />
+          ))}
+          <div className="flex-shrink-0 w-4" />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// --- 主應用組件 ---
+export default function App() {
+  return (
+    <div className="min-h-screen text-gray-900">
+      <GlobalStyles />
+      <Header />
+      
+      <main>
+        <Hero />
+        <Features />
+        
+        {/* 開戶引導區 */}
+        <section className="py-24 bg-gray-50">
+          <div className="container mx-auto px-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="bg-gray-900 rounded-[3.5rem] p-12 md:p-24 text-white text-center relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-red-600/20 to-transparent pointer-events-none" />
+              
+              <h2 className="text-3xl md:text-6xl font-bold mb-8 relative z-10">準備好開啟您的投資旅程了嗎？</h2>
+              <p className="text-gray-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto relative z-10">
+                加入口袋證券，與 50 萬名投資者一起，用最直覺的方式管理您的財富。
+              </p>
+              
+              <div className="flex flex-wrap justify-center gap-6 relative z-10">
+                <button className="bg-[#E62327] px-10 py-5 rounded-2xl font-bold text-lg hover:shadow-[0_20px_40px_rgba(230,35,39,0.3)] hover:-translate-y-1 transition-all">
+                  立即線上開戶
+                </button>
+                <button className="bg-white/10 backdrop-blur-md border border-white/10 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all">
+                  查看新手導引
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-white py-16 border-t border-gray-100">
+        <div className="container mx-auto px-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="w-8 h-8 bg-[#E62327] rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xs">P</span>
+            </div>
+            <span className="text-xl font-bold">口袋證券</span>
+          </div>
+          <p className="text-gray-400 text-sm mb-4">口袋證券股份有限公司 | 台北市南京東路二段 XX 號</p>
+          <p className="text-gray-400 text-xs">© 2024 Pocket Securities. 投資一定有風險，基金投資有賺有賠，申購前應詳閱公開說明書。</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
